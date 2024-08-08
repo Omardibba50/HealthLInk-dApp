@@ -89,9 +89,34 @@
           "internalType": "uint256",
           "name": "recordIndex",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "price",
+          "type": "uint256"
         }
       ],
       "name": "RecordMonetized",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "TokensClaimed",
       "type": "event"
     },
     {
@@ -118,6 +143,19 @@
       ],
       "name": "Transfer",
       "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "FREE_TOKENS_ON_SIGNUP",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
     },
     {
       "inputs": [],
@@ -166,11 +204,6 @@
           "internalType": "uint256",
           "name": "_age",
           "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "_password",
-          "type": "string"
         }
       ],
       "name": "addDoctor",
@@ -199,11 +232,6 @@
           "internalType": "uint256",
           "name": "_age",
           "type": "uint256"
-        },
-        {
-          "internalType": "string",
-          "name": "_password",
-          "type": "string"
         }
       ],
       "name": "addPatient",
@@ -313,6 +341,13 @@
     },
     {
       "inputs": [],
+      "name": "claimFreeTokens",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
       "name": "decimals",
       "outputs": [
         {
@@ -359,11 +394,6 @@
       "name": "doctors",
       "outputs": [
         {
-          "internalType": "address",
-          "name": "addr",
-          "type": "address"
-        },
-        {
           "internalType": "string",
           "name": "name",
           "type": "string"
@@ -384,115 +414,8 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint256",
-          "name": "tokenBalance",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_patient",
-          "type": "address"
-        }
-      ],
-      "name": "getPatientDetails",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "aadhar",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "name",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "email",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "age",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "recordSize",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "tokenBalance",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_patient",
-          "type": "address"
-        }
-      ],
-      "name": "getPatientRecordSize",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_patient",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_recordIndex",
-          "type": "uint256"
-        }
-      ],
-      "name": "getRecordDetails",
-      "outputs": [
-        {
-          "internalType": "string",
-          "name": "date",
-          "type": "string"
-        },
-        {
-          "internalType": "address",
-          "name": "doctor",
-          "type": "address"
-        },
-        {
-          "internalType": "string",
-          "name": "diagnosis",
-          "type": "string"
-        },
-        {
-          "internalType": "string",
-          "name": "description",
-          "type": "string"
-        },
-        {
           "internalType": "bool",
-          "name": "isMonetized",
+          "name": "hasClaimedTokens",
           "type": "bool"
         }
       ],
@@ -503,11 +426,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_user",
+          "name": "_patient",
           "type": "address"
         }
       ],
-      "name": "getTokenBalance",
+      "name": "getRecordCount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -543,24 +466,13 @@
       "type": "function"
     },
     {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_patient",
-          "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_recordIndex",
-          "type": "uint256"
-        }
-      ],
-      "name": "isRecordMonetized",
+      "inputs": [],
+      "name": "marketplace",
       "outputs": [
         {
-          "internalType": "bool",
+          "internalType": "contract IHealthDataMarketplace",
           "name": "",
-          "type": "bool"
+          "type": "address"
         }
       ],
       "stateMutability": "view",
@@ -570,7 +482,25 @@
       "inputs": [
         {
           "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "mintTokens",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
           "name": "_recordIndex",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_price",
           "type": "uint256"
         }
       ],
@@ -641,9 +571,9 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint256",
-          "name": "tokenBalance",
-          "type": "uint256"
+          "internalType": "bool",
+          "name": "hasClaimedTokens",
+          "type": "bool"
         }
       ],
       "stateMutability": "view",
@@ -652,6 +582,19 @@
     {
       "inputs": [],
       "name": "renounceOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_marketplaceAddress",
+          "type": "address"
+        }
+      ],
+      "name": "setMarketplace",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -752,34 +695,64 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "",
+          "name": "_patient",
           "type": "address"
         }
       ],
-      "name": "users",
+      "name": "viewRecords",
       "outputs": [
         {
-          "internalType": "address",
-          "name": "addr",
-          "type": "address"
-        },
-        {
-          "internalType": "string",
-          "name": "password",
-          "type": "string"
-        },
-        {
-          "internalType": "uint256",
-          "name": "categ",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "tokenBalance",
-          "type": "uint256"
+          "components": [
+            {
+              "internalType": "string",
+              "name": "date",
+              "type": "string"
+            },
+            {
+              "internalType": "address",
+              "name": "doctor",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "diagnosis",
+              "type": "string"
+            },
+            {
+              "internalType": "string",
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "internalType": "string[]",
+              "name": "files",
+              "type": "string[]"
+            },
+            {
+              "internalType": "bool",
+              "name": "isMonetized",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct Health.Record[]",
+          "name": "",
+          "type": "tuple[]"
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawTokens",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     }
   ]

@@ -1,15 +1,33 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.10;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IHealthDataMarketplace {
+    function listData(address patient, uint256 recordIndex, uint256 price) external;
+}
+
 contract Health is ERC20, Ownable {
-    struct User {
-        address addr;
-        string password;
-        uint categ;
-        uint256 tokenBalance;
+    uint256 public constant INITIAL_SUPPLY = 1000000 * 10**18; // 1 million tokens
+    uint256 public constant TOKENS_PER_RECORD = 10 * 10**18; // 10 tokens per record
+    uint256 public constant FREE_TOKENS_ON_SIGNUP = 50 * 10**18; // 50 tokens for new users
+
+    struct Patient {
+        string aadhar;
+        string name;
+        string email;
+        uint256 age;
+        uint256 recordSize;
+        bool hasClaimedTokens;
+    }
+
+    struct Doctor {
+        string name;
+        string hospital;
+        string specialization;
+        uint256 age;
+        bool hasClaimedTokens;
     }
 
     struct Record {
@@ -21,122 +39,91 @@ contract Health is ERC20, Ownable {
         bool isMonetized;
     }
 
-    struct Patient {
-        string aadhar;
-        string name;
-        string email;
-        uint age;
-        address[] doctorAccessList;
-        mapping(uint => Record) recordMap;
-        uint recordSize;
-        uint256 tokenBalance;
-    }
-
-    struct Doctor {
-        address addr;
-        string name;
-        string hospital;
-        string specialization;
-        uint age;
-        address[] patientAccessList;
-        uint256 tokenBalance;
-    }
-
-    mapping(address => User) public users;
     mapping(address => Patient) public patients;
     mapping(address => Doctor) public doctors;
+    mapping(address => Record[]) private patientRecords;
 
-    uint256 public constant TOKENS_PER_RECORD = 10 * 10**18; // 10 tokens
-    uint256 public constant INITIAL_SUPPLY = 1000000 * 10**18; // 1 million tokens
+    IHealthDataMarketplace public marketplace;
 
+    event TokensClaimed(address indexed user, uint256 amount);
     event RecordAdded(address indexed patient, address indexed doctor, uint256 recordIndex);
-    event RecordMonetized(address indexed patient, uint256 recordIndex);
+    event RecordMonetized(address indexed patient, uint256 recordIndex, uint256 price);
 
-    constructor() ERC20("HealthLink Africa Token", "HLA") {
+    constructor() ERC20("HealthLink Token", "HLT") {
         _mint(address(this), INITIAL_SUPPLY);
     }
 
-    function addPatient(string memory _aadhar, string memory _name, string memory _email, uint _age, string memory _password) public {
-        users[msg.sender] = User(msg.sender, _password, 0, 0);
-        patients[msg.sender].aadhar = _aadhar;
-        patients[msg.sender].name = _name;
-        patients[msg.sender].email = _email;
-        patients[msg.sender].age = _age;
-        patients[msg.sender].recordSize = 0;
-        patients[msg.sender].tokenBalance = 0;
+    function setMarketplace(address _marketplaceAddress) external onlyOwner {
+        marketplace = IHealthDataMarketplace(_marketplaceAddress);
     }
 
-    function addDoctor(string memory _name, string memory _hospital, string memory _specialization, uint _age, string memory _password) public {
-        users[msg.sender] = User(msg.sender, _password, 1, 0);
-        doctors[msg.sender] = Doctor(msg.sender, _name, _hospital, _specialization, _age, new address[](0), 0);
+    function addPatient(string memory _aadhar, string memory _name, string memory _email, uint256 _age) public {
+        require(bytes(patients[msg.sender].aadhar).length == 0, "Patient already registered");
+        patients[msg.sender] = Patient(_aadhar, _name, _email, _age, 0, false);
+    }
+
+    function addDoctor(string memory _name, string memory _hospital, string memory _specialization, uint256 _age) public {
+        require(bytes(doctors[msg.sender].name).length == 0, "Doctor already registered");
+        doctors[msg.sender] = Doctor(_name, _hospital, _specialization, _age, false);
+    }
+
+    function claimFreeTokens() public {
+        require(
+            (bytes(patients[msg.sender].aadhar).length > 0 || bytes(doctors[msg.sender].name).length > 0),
+            "User not registered"
+        );
+        
+        if (bytes(patients[msg.sender].aadhar).length > 0) {
+            require(!patients[msg.sender].hasClaimedTokens, "Tokens already claimed");
+            patients[msg.sender].hasClaimedTokens = true;
+        } else {
+            require(!doctors[msg.sender].hasClaimedTokens, "Tokens already claimed");
+            doctors[msg.sender].hasClaimedTokens = true;
+        }
+
+        _transfer(address(this), msg.sender, FREE_TOKENS_ON_SIGNUP);
+        emit TokensClaimed(msg.sender, FREE_TOKENS_ON_SIGNUP);
     }
 
     function addRecord(address _patient, string memory _date, string memory _diagnosis, string memory _description, string[] memory _files) public {
-        require(users[msg.sender].categ == 1, "Only doctors can add records");
+        require(bytes(doctors[msg.sender].name).length > 0, "Only doctors can add records");
         Patient storage patient = patients[_patient];
-        patient.recordMap[patient.recordSize] = Record(_date, msg.sender, _diagnosis, _description, _files, false);
+        require(bytes(patient.aadhar).length > 0, "Patient not registered");
+        
+        Record memory newRecord = Record(_date, msg.sender, _diagnosis, _description, _files, false);
+        patientRecords[_patient].push(newRecord);
         patient.recordSize++;
-
-        _transfer(address(this), _patient, TOKENS_PER_RECORD);
+        
+        _transfer(address(this), msg.sender, TOKENS_PER_RECORD);
         emit RecordAdded(_patient, msg.sender, patient.recordSize - 1);
     }
 
-    function monetizeRecord(uint256 _recordIndex) public {
-        require(_recordIndex < patients[msg.sender].recordSize, "Invalid record index");
-        patients[msg.sender].recordMap[_recordIndex].isMonetized = true;
-        emit RecordMonetized(msg.sender, _recordIndex);
+    function monetizeRecord(uint256 _recordIndex, uint256 _price) public {
+        require(bytes(patients[msg.sender].aadhar).length > 0, "Only patients can monetize records");
+        require(_recordIndex < patientRecords[msg.sender].length, "Invalid record index");
+        require(!patientRecords[msg.sender][_recordIndex].isMonetized, "Record already monetized");
+
+        patientRecords[msg.sender][_recordIndex].isMonetized = true;
+        marketplace.listData(msg.sender, _recordIndex, _price);
+
+        emit RecordMonetized(msg.sender, _recordIndex, _price);
     }
 
-    function getTokenBalance(address _user) public view returns (uint256) {
-        return users[_user].tokenBalance;
+    function viewRecords(address _patient) public view returns (Record[] memory) {
+        require(msg.sender == _patient || bytes(doctors[msg.sender].name).length > 0, "Only the patient or a doctor can view records");
+        return patientRecords[_patient];
     }
 
-    // New functions to expose patient data safely
-    function getPatientRecordSize(address _patient) public view returns (uint256) {
-        return patients[_patient].recordSize;
+    function getRecordCount(address _patient) public view returns (uint256) {
+        return patientRecords[_patient].length;
     }
 
-    function isRecordMonetized(address _patient, uint256 _recordIndex) public view returns (bool) {
-        require(_recordIndex < patients[_patient].recordSize, "Invalid record index");
-        return patients[_patient].recordMap[_recordIndex].isMonetized;
+    function mintTokens(uint256 amount) public onlyOwner {
+        _mint(address(this), amount);
     }
 
-    // New function to get record details
-    function getRecordDetails(address _patient, uint256 _recordIndex) public view returns (
-        string memory date,
-        address doctor,
-        string memory diagnosis,
-        string memory description,
-        bool isMonetized
-    ) {
-        require(_recordIndex < patients[_patient].recordSize, "Invalid record index");
-        Record storage record = patients[_patient].recordMap[_recordIndex];
-        return (
-            record.date,
-            record.doctor,
-            record.diagnosis,
-            record.description,
-            record.isMonetized
-        );
-    }
-
-    // New function to get patient details
-    function getPatientDetails(address _patient) public view returns (
-        string memory aadhar,
-        string memory name,
-        string memory email,
-        uint age,
-        uint256 recordSize,
-        uint256 tokenBalance
-    ) {
-        Patient storage patient = patients[_patient];
-        return (
-            patient.aadhar,
-            patient.name,
-            patient.email,
-            patient.age,
-            patient.recordSize,
-            patient.tokenBalance
-        );
+    function withdrawTokens(uint256 amount) public onlyOwner {
+        require(balanceOf(address(this)) >= amount, "Insufficient balance");
+        _transfer(address(this), owner(), amount);
     }
 }

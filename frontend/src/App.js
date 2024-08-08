@@ -4,7 +4,6 @@ import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
 import PatientDashboard from './pages/PatientDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
-import ResearcherDashboard from './pages/ResearcherDashboard';
 import Marketplace from './pages/Marketplace';
 
 function App() {
@@ -17,7 +16,6 @@ function App() {
             <Route path="/" element={<Login />} />
             <Route path="/patient" element={<PatientDashboard />} />
             <Route path="/doctor" element={<DoctorDashboard />} />
-            <Route path="/researcher" element={<ResearcherDashboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
           </Routes>
         </div>

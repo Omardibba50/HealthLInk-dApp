@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { getHealthContract, getMarketplaceContract, getAccount, connectWallet } from '../utils/web3Config';
+import { getHealthContract, getMarketplaceContract, getAccount, connectWallet, sendTransaction, web3 } from '../utils/web3Config';
 
 function Marketplace() {
   const [listings, setListings] = useState([]);
-  const [userType, setUserType] = useState(null);
+  const [error, setError] = useState('');
+  const [tokenBalance, setTokenBalance] = useState('0');
 
   useEffect(() => {
     loadMarketplaceData();
@@ -13,101 +14,97 @@ function Marketplace() {
     try {
       await connectWallet();
       const account = await getAccount();
-      const healthContract = getHealthContract();
       const marketplaceContract = getMarketplaceContract();
+      const healthContract = getHealthContract();
       
-      const userData = await healthContract.methods.users(account).call();
-      setUserType(userData.categ);
+      const activeListings = await marketplaceContract.methods.getActiveListings().call();
+      
+      const listingsData = await Promise.all(activeListings.map(async (listingId) => {
+        const listing = await marketplaceContract.methods.getListingDetails(listingId).call();
+        return {
+          id: listingId,
+          patient: listing[0],
+          recordIndex: listing[1],
+          price: listing[2],
+          isActive: listing[3]
+        };
+      }));
 
-      const listingCount = await marketplaceContract.methods.listingCount().call();
-      const listingsData = [];
-      for (let i = 0; i < listingCount; i++) {
-        const listing = await marketplaceContract.methods.listings(i).call();
-        if (listing.isActive) {
-          listingsData.push({ ...listing, id: i });
-        }
-      }
       setListings(listingsData);
+
+      const balance = await healthContract.methods.balanceOf(account).call();
+      setTokenBalance(web3.utils.fromWei(balance, 'ether'));
     } catch (error) {
       console.error("Error loading marketplace data:", error);
+      setError("Failed to load marketplace data. Please try again.");
     }
   }
 
   async function handlePurchase(listingId) {
     try {
-      await connectWallet();
       const account = await getAccount();
       const marketplaceContract = getMarketplaceContract();
-      await marketplaceContract.methods.purchaseData(listingId).send({ from: account });
-      loadMarketplaceData();
+      const healthContract = getHealthContract();
+      
+      const listing = await marketplaceContract.methods.getListingDetails(listingId).call();
+      const price = listing[2];
+
+      // First, approve the marketplace contract to spend tokens on behalf of the user
+      await sendTransaction(
+        healthContract.methods.approve(marketplaceContract.options.address, price),
+        { from: account }
+      );
+
+      // Then, purchase the data
+      await sendTransaction(
+        marketplaceContract.methods.purchaseData(listingId),
+        { from: account }
+      );
+
+      // Reload marketplace data to reflect changes
+      await loadMarketplaceData();
     } catch (error) {
       console.error("Error purchasing data:", error);
+      setError("Failed to purchase data. Please try again.");
     }
   }
 
-  async function handleList(e) {
-    e.preventDefault();
+  function formatPrice(price) {
     try {
-      await connectWallet();
-      const account = await getAccount();
-      const marketplaceContract = getMarketplaceContract();
-      const recordIndex = e.target.recordIndex.value;
-      const price = e.target.price.value;
-      await marketplaceContract.methods.listData(recordIndex, price).send({ from: account });
-      loadMarketplaceData();
+      return web3.utils.fromWei(price, 'ether');
     } catch (error) {
-      console.error("Error listing data:", error);
+      console.error("Error formatting price:", error);
+      return "N/A";
     }
   }
 
   return (
     <div className="p-8 bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen">
-      <h1 className="text-4xl font-bold text-white mb-8">Marketplace</h1>
-      {userType === '0' && ( // Patient
-        <div className="bg-white bg-opacity-10 rounded-lg p-6 mb-8 shadow-lg">
-          <h2 className="text-2xl font-semibold text-white mb-4">List Data</h2>
-          <form onSubmit={handleList}>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Record Index</label>
-              <input
-                type="number"
-                name="recordIndex"
-                className="w-full px-3 py-2 bg-white bg-opacity-20 rounded text-white"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-white mb-2">Price (in tokens)</label>
-              <input
-                type="number"
-                name="price"
-                className="w-full px-3 py-2 bg-white bg-opacity-20 rounded text-white"
-                required
-              />
-            </div>
-            <button type="submit" className="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700">
-              List Data
-            </button>
-          </form>
-        </div>
-      )}
+      <h1 className="text-4xl font-bold text-white mb-8">Data Marketplace</h1>
+      {error && <p className="text-red-300 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
+      <div className="bg-white bg-opacity-10 rounded-lg p-6 mb-8 shadow-lg">
+        <h2 className="text-2xl font-semibold text-white mb-4">Your Token Balance</h2>
+        <p className="text-white text-xl">{tokenBalance} HLT</p>
+      </div>
       <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-semibold text-white mb-4">Available Listings</h2>
-        {listings.map((listing) => (
-          <div key={listing.id} className="bg-white bg-opacity-20 rounded-lg p-4 mb-4">
-            <p className="text-white">Patient: {listing.patient}</p>
-            <p className="text-white">Record Index: {listing.recordIndex}</p>
-            <p className="text-white">Price: {listing.price} tokens</p>
-            {userType === '2' && ( // Researcher
+        <h2 className="text-2xl font-semibold text-white mb-4">Available Data Listings</h2>
+        {listings.length === 0 ? (
+          <p className="text-white">No active listings available at the moment.</p>
+        ) : (
+          listings.map((listing) => (
+            <div key={listing.id} className="bg-white bg-opacity-20 rounded-lg p-4 mb-4">
+              <p className="text-white">Patient: {listing.patient}</p>
+              <p className="text-white">Record Index: {listing.recordIndex}</p>
+              <p className="text-white">Price: {formatPrice(listing.price)} HLT</p>
               <button
                 onClick={() => handlePurchase(listing.id)}
-                className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+                className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105"
               >
                 Purchase
               </button>
-            )}
-          </div>
-        ))}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

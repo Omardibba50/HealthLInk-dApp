@@ -10,7 +10,6 @@ function Sidebar() {
       <nav className="mt-8">
         <Link to="/patient" className="block py-2 px-4 hover:bg-white hover:bg-opacity-10">Patient Dashboard</Link>
         <Link to="/doctor" className="block py-2 px-4 hover:bg-white hover:bg-opacity-10">Doctor Dashboard</Link>
-        <Link to="/researcher" className="block py-2 px-4 hover:bg-white hover:bg-opacity-10">Researcher Dashboard</Link>
         <Link to="/marketplace" className="block py-2 px-4 hover:bg-white hover:bg-opacity-10">Marketplace</Link>
       </nav>
     </div>
