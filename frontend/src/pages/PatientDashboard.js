@@ -71,40 +71,39 @@ function PatientDashboard() {
   }
 
   return (
-    <div className="p-8 bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen">
-      <h1 className="text-4xl font-bold text-white mb-8">Patient Dashboard</h1>
-      {error && <p className="text-red-300 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
+    <div className="container mx-auto px-4 py-8">
+      {error && <p className="text-red-500 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
       {patient && (
-        <div className="bg-white bg-opacity-10 rounded-lg p-6 mb-8 shadow-lg">
-          <h2 className="text-2xl font-semibold text-white mb-4">Personal Information</h2>
-          <p className="text-white"><span className="font-semibold">Name:</span> {patient.name}</p>
-          <p className="text-white"><span className="font-semibold">Email:</span> {patient.email}</p>
-          <p className="text-white"><span className="font-semibold">Age:</span> {patient.age}</p>
-          <p className="text-white"><span className="font-semibold">Token Balance:</span> {tokenBalance} HLT</p>
-          <p className="text-white break-all"><span className="font-semibold">Address:</span> {patient.address}</p>
+        <div className="bg-white rounded-lg p-6 mb-8 shadow-lg">
+          <h2 className="text-2xl font-semibold text-indigo-900 mb-4">Personal Information</h2>
+          <p className="text-gray-700"><span className="font-semibold">Name:</span> {patient.name}</p>
+          <p className="text-gray-700"><span className="font-semibold">Email:</span> {patient.email}</p>
+          <p className="text-gray-700"><span className="font-semibold">Age:</span> {patient.age}</p>
+          <p className="text-gray-700"><span className="font-semibold">Token Balance:</span> {tokenBalance} HLT</p>
+          <p className="text-gray-700 break-all"><span className="font-semibold">Address:</span> {patient.address}</p>
         </div>
       )}
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-semibold text-white mb-4">Medical Records</h2>
+      <div className="bg-white rounded-lg p-6 shadow-lg">
+        <h2 className="text-2xl font-semibold text-indigo-900 mb-4">Medical Records</h2>
         {records.length === 0 ? (
-          <p className="text-white">No medical records found.</p>
+          <p className="text-gray-700">No medical records found.</p>
         ) : (
           records.map((record, index) => (
-            <div key={index} className="bg-white bg-opacity-20 rounded-lg p-4 mb-4">
-              <p className="text-white"><span className="font-semibold">Date:</span> {record.date}</p>
-              <p className="text-white"><span className="font-semibold">Doctor:</span> {record.doctor}</p>
-              <p className="text-white"><span className="font-semibold">Diagnosis:</span> {record.diagnosis}</p>
-              <p className="text-white"><span className="font-semibold">Description:</span> {record.description}</p>
+            <div key={index} className="bg-gray-100 rounded-lg p-4 mb-4">
+              <p className="text-gray-700"><span className="font-semibold">Date:</span> {record.date}</p>
+              <p className="text-gray-700"><span className="font-semibold">Doctor:</span> {record.doctor}</p>
+              <p className="text-gray-700"><span className="font-semibold">Diagnosis:</span> {record.diagnosis}</p>
+              <p className="text-gray-700"><span className="font-semibold">Description:</span> {record.description}</p>
               {!record.isMonetized && (
                 <button
                   onClick={() => handleMonetize(index)}
-                  className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105"
+                  className="mt-2 bg-gradient-to-r from-pink-500 to-yellow-500 text-white font-bold py-2 px-4 rounded-full hover:from-pink-600 hover:to-yellow-600 transition duration-300 shadow-lg"
                 >
                   Monetize
                 </button>
               )}
               {record.isMonetized && (
-                <p className="text-green-300 mt-2">This record has been monetized</p>
+                <p className="text-green-600 mt-2">This record has been monetized</p>
               )}
             </div>
           ))

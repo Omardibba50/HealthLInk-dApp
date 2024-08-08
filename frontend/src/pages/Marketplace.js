@@ -79,26 +79,25 @@ function Marketplace() {
   }
 
   return (
-    <div className="p-8 bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen">
-      <h1 className="text-4xl font-bold text-white mb-8">Data Marketplace</h1>
-      {error && <p className="text-red-300 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 mb-8 shadow-lg">
-        <h2 className="text-2xl font-semibold text-white mb-4">Your Token Balance</h2>
-        <p className="text-white text-xl">{tokenBalance} HLT</p>
+    <div className="container mx-auto px-4 py-8">
+      {error && <p className="text-red-500 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
+      <div className="bg-white rounded-lg p-6 mb-8 shadow-lg">
+        <h2 className="text-2xl font-semibold text-indigo-900 mb-4">Your Token Balance</h2>
+        <p className="text-2xl text-gray-700">{tokenBalance} HLT</p>
       </div>
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-semibold text-white mb-4">Available Data Listings</h2>
+      <div className="bg-white rounded-lg p-6 shadow-lg">
+        <h2 className="text-2xl font-semibold text-indigo-900 mb-4">Available Data Listings</h2>
         {listings.length === 0 ? (
-          <p className="text-white">No active listings available at the moment.</p>
+          <p className="text-gray-700">No active listings available at the moment.</p>
         ) : (
           listings.map((listing) => (
-            <div key={listing.id} className="bg-white bg-opacity-20 rounded-lg p-4 mb-4">
-              <p className="text-white">Patient: {listing.patient}</p>
-              <p className="text-white">Record Index: {listing.recordIndex}</p>
-              <p className="text-white">Price: {formatPrice(listing.price)} HLT</p>
+            <div key={listing.id} className="bg-gray-100 rounded-lg p-4 mb-4">
+              <p className="text-gray-700">Patient: {listing.patient}</p>
+              <p className="text-gray-700">Record Index: {listing.recordIndex}</p>
+              <p className="text-gray-700">Price: {formatPrice(listing.price)} HLT</p>
               <button
                 onClick={() => handlePurchase(listing.id)}
-                className="mt-2 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105"
+                className="mt-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-2 px-4 rounded-full hover:from-indigo-700 hover:to-purple-700 transition duration-300 shadow-lg"
               >
                 Purchase
               </button>

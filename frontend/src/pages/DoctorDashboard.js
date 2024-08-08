@@ -48,17 +48,12 @@ function DoctorDashboard() {
     setSuccess('');
     try {
       const account = await getAccount();
-      console.log("Doctor account:", account);
-      
       const healthContract = getHealthContract();
-      console.log("Health contract address:", healthContract.options.address);
 
-      console.log("Calling claimFreeTokens...");
       await sendTransaction(
         healthContract.methods.claimFreeTokens(),
         { from: account }
       );
-      console.log("claimFreeTokens transaction sent successfully");
 
       await loadDoctorData();
       setSuccess("Tokens claimed successfully!");
@@ -97,68 +92,66 @@ function DoctorDashboard() {
   }
 
   return (
-    <div className="p-8 bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen">
-      <h1 className="text-4xl font-bold text-white mb-8">Doctor Dashboard</h1>
-      {error && <p className="text-red-300 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
-      {success && <p className="text-green-300 mb-4 bg-green-100 bg-opacity-20 p-3 rounded">{success}</p>}
-      {isLoading && <p className="text-white mb-4">Loading...</p>}
+    <div className="container mx-auto px-4 py-8">
+      {error && <p className="text-red-500 mb-4 bg-red-100 bg-opacity-20 p-3 rounded">{error}</p>}
+      {success && <p className="text-green-500 mb-4 bg-green-100 bg-opacity-20 p-3 rounded">{success}</p>}
       {doctor && (
-        <div className="bg-white bg-opacity-10 rounded-lg p-6 mb-8 shadow-lg">
-          <h2 className="text-2xl font-semibold text-white mb-4">Doctor Information</h2>
-          <p className="text-white"><span className="font-semibold">Name:</span> {doctor.name || 'N/A'}</p>
-          <p className="text-white"><span className="font-semibold">Hospital:</span> {doctor.hospital || 'N/A'}</p>
-          <p className="text-white"><span className="font-semibold">Specialization:</span> {doctor.specialization || 'N/A'}</p>
-          <p className="text-white"><span className="font-semibold">Token Balance:</span> {tokenBalance} HLT</p>
+        <div className="bg-white rounded-lg p-6 mb-8 shadow-lg">
+          <h2 className="text-2xl font-semibold text-indigo-900 mb-4">Doctor Information</h2>
+          <p className="text-gray-700"><span className="font-semibold">Name:</span> {doctor.name || 'N/A'}</p>
+          <p className="text-gray-700"><span className="font-semibold">Hospital:</span> {doctor.hospital || 'N/A'}</p>
+          <p className="text-gray-700"><span className="font-semibold">Specialization:</span> {doctor.specialization || 'N/A'}</p>
+          <p className="text-gray-700"><span className="font-semibold">Token Balance:</span> {tokenBalance} HLT</p>
           {!doctor.hasClaimedTokens && (
             <button
               onClick={handleClaimTokens}
               disabled={isLoading}
-              className="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50"
+              className="mt-4 bg-gradient-to-r from-pink-500 to-yellow-500 text-white font-bold py-2 px-4 rounded-full hover:from-pink-600 hover:to-yellow-600 transition duration-300 shadow-lg disabled:opacity-50"
             >
               {isLoading ? 'Processing...' : 'Claim Free Tokens'}
             </button>
           )}
         </div>
       )}
-      <div className="bg-white bg-opacity-10 rounded-lg p-6 shadow-lg">
-        <h2 className="text-2xl font-semibold text-white mb-4">Add Patient Record</h2>
+      <div className="bg-white rounded-lg p-6 shadow-lg">
+        <h2 className="text-2xl font-semibold text-indigo-900 mb-4">Add Patient Record</h2>
         <form onSubmit={handleAddRecord}>
           <div className="mb-4">
-            <label className="block text-white mb-2" htmlFor="patientAddress">Patient Address</label>
+            <label className="block text-gray-700 mb-2" htmlFor="patientAddress">Patient Address</label>
             <input
               id="patientAddress"
               type="text"
               value={patientAddress}
               onChange={(e) => setPatientAddress(e.target.value)}
-              className="w-full px-3 py-2 bg-white bg-opacity-20 rounded text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block text-white mb-2" htmlFor="diagnosis">Diagnosis</label>
+            <label className="block text-gray-700 mb-2" htmlFor="diagnosis">Diagnosis</label>
             <input
               id="diagnosis"
               type="text"
               value={diagnosis}
               onChange={(e) => setDiagnosis(e.target.value)}
-              className="w-full px-3 py-2 bg-white bg-opacity-20 rounded text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
           </div>
           <div className="mb-4">
-            <label className="block text-white mb-2" htmlFor="description">Description</label>
+            <label className="block text-gray-700 mb-2" htmlFor="description">Description</label>
             <textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-white bg-opacity-20 rounded text-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             ></textarea>
           </div>
           <button 
             type="submit" 
             disabled={isLoading}
-            className="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-2 px-4 rounded-full hover:from-indigo-700 hover:to-purple-700 transition duration-300 shadow-lg disabled:opacity-50"
           >
             {isLoading ? 'Processing...' : 'Add Record'}
           </button>

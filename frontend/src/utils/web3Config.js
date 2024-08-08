@@ -40,6 +40,7 @@ export const connectWallet = async () => {
       }
 
       initializeContracts();
+      return true;
     } catch (error) {
       console.error("Wallet connection error:", error);
       throw new Error(error.message || "User denied account access");
@@ -47,6 +48,12 @@ export const connectWallet = async () => {
   } else {
     throw new Error("No Ethereum browser extension detected, please install MetaMask");
   }
+};
+
+export const logout = () => {
+  web3 = null;
+  healthContract = null;
+  marketplaceContract = null;
 };
 
 const switchToPolygonAmoy = async () => {
