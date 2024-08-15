@@ -53,35 +53,35 @@ pipeline {
             }
         }
         
-        stage('Deploy to DigitalOcean Kubernetes') {
-            steps {
-                withCredentials([file(credentialsId: 'do-kubeconfig', variable: 'KUBECONFIG')]) {
-                    sh '''
-                        export KUBECONFIG=$KUBECONFIG
-                        
-                        echo "Kubectl version:"
-                        kubectl version --client
-                        
-                        echo "Updating deployment YAML:"
-                        sed -i "s|image: .*|image: ${DOCKER_IMAGE}:${BUILD_NUMBER}|" k8s/frontend-deployment.yaml
-                        
-                        echo "Applying Kubernetes manifests:"
-                        kubectl apply -f k8s/frontend-deployment.yaml
-                        kubectl apply -f k8s/frontend-service.yaml
-                        kubectl apply -f k8s/frontend-hpa.yaml
-                        
-                        echo "Waiting for deployment to be ready:"
-                        kubectl rollout status deployment/healthlink-frontend --timeout=300s
-                        
-                        echo "Checking pods:"
-                        kubectl get pods
-                        
-                        echo "Checking services:"
-                        kubectl get services
-                    '''
-                }
-            }
+       stage('Deploy to DigitalOcean Kubernetes') {
+    steps {
+        withCredentials([file(credentialsId: 'do-kubeconfig', variable: 'KUBECONFIG')]) {
+            sh '''
+                export KUBECONFIG=$KUBECONFIG
+                
+                echo "Kubectl version:"
+                kubectl version --client
+                
+                echo "Updating deployment YAML:"
+                sed -i "s|image: .*|image: omardibba/healthlink-frontend:${BUILD_NUMBER}|" k8s/frontend-deployment.yaml
+                
+                echo "Applying Kubernetes manifests:"
+                kubectl apply -f k8s/frontend-deployment.yaml
+                kubectl apply -f k8s/frontend-service.yaml
+                kubectl apply -f k8s/frontend-hpa.yaml
+                
+                echo "Waiting for deployment to be ready:"
+                kubectl rollout status deployment/healthlink-frontend --timeout=300s
+                
+                echo "Checking pods:"
+                kubectl get pods
+                
+                echo "Checking services:"
+                kubectl get services
+            '''
         }
+    }
+}
     }
     
     post {
