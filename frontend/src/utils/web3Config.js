@@ -6,8 +6,8 @@ let web3;
 let healthContract;
 let marketplaceContract;
 
-const healthContractAddress = '0xDB204A33b7d5Ac8e50D8a58156f9814128174C91';
-const marketplaceContractAddress = '0xba90951B6f2dE18afA70C930B0E8baDe77884342';
+const healthContractAddress = process.env.REACT_APP_HEALTH_CONTRACT_ADDRESS;
+const marketplaceContractAddress = process.env.REACT_APP_MARKETPLACE_CONTRACT_ADDRESS;
 
 const HealthABI = HealthABIImport.abi || HealthABIImport;
 const HealthDataMarketplaceABI = HealthDataMarketplaceABIImport.abi || HealthDataMarketplaceABIImport;

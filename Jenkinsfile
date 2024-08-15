@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         KUBECONFIG = credentials('do-kubeconfig')
-        DOCKER_IMAGE = 'yourdockerhubusername/healthlink-frontend'
+        DOCKER_IMAGE = 'omardibba/healthlink-frontend'
     }
     
     stages {
