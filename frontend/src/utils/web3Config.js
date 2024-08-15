@@ -1,16 +1,18 @@
 import Web3 from 'web3';
-import HealthABI from '../abis/Health.json';
-import HealthDataMarketplaceABI from '../abis/HealthDataMarketplace.json';
+import HealthABIImport from '../abis/Health.json';
+import HealthDataMarketplaceABIImport from '../abis/HealthDataMarketplace.json';
 
 let web3;
 let healthContract;
 let marketplaceContract;
 
-const healthContractAddress = '0x3964A03b63C7575c000312f3EA15588656b07Dc3';
-const marketplaceContractAddress = '0x8D52f7C67fCBB453321FB40c5Ce262EDc2eFd6e5';
+const healthContractAddress = '0xDB204A33b7d5Ac8e50D8a58156f9814128174C91';
+const marketplaceContractAddress = '0xba90951B6f2dE18afA70C930B0E8baDe77884342';
+
+const HealthABI = HealthABIImport.abi || HealthABIImport;
+const HealthDataMarketplaceABI = HealthDataMarketplaceABIImport.abi || HealthDataMarketplaceABIImport;
 
 const POLYGON_AMOY_CHAIN_ID = 80002;
-
 const RPC_URLS = [
   'https://rpc-amoy.polygon.technology/',
   'https://polygon-amoy-testnet.public.blastapi.io',
@@ -28,22 +30,27 @@ const createWeb3Instance = (provider) => {
   return new Web3(provider || Web3.givenProvider || getNextRpcUrl());
 };
 
+const switchRpcUrl = () => {
+  const newRpcUrl = getNextRpcUrl();
+  console.log(`Switching to RPC URL: ${newRpcUrl}`);
+  web3.setProvider(newRpcUrl);
+};
+
 export const connectWallet = async () => {
   if (window.ethereum) {
     try {
       await window.ethereum.request({ method: 'eth_requestAccounts' });
       web3 = createWeb3Instance(window.ethereum);
-
       const chainId = await web3.eth.getChainId();
+      console.log('Connected to chain ID:', chainId);
       if (chainId !== POLYGON_AMOY_CHAIN_ID) {
         await switchToPolygonAmoy();
       }
-
-      initializeContracts();
+      await initializeContracts();
       return true;
     } catch (error) {
       console.error("Wallet connection error:", error);
-      throw new Error(error.message || "User denied account access");
+      throw new Error("Failed to connect wallet: " + error.message);
     }
   } else {
     throw new Error("No Ethereum browser extension detected, please install MetaMask");
@@ -71,11 +78,7 @@ const switchToPolygonAmoy = async () => {
             {
               chainId: Web3.utils.toHex(POLYGON_AMOY_CHAIN_ID),
               chainName: 'Polygon Amoy Testnet',
-              nativeCurrency: {
-                name: 'MATIC',
-                symbol: 'MATIC',
-                decimals: 18
-              },
+              nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
               rpcUrls: RPC_URLS,
               blockExplorerUrls: ['https://www.oklink.com/amoy'],
             },
@@ -90,13 +93,23 @@ const switchToPolygonAmoy = async () => {
   }
 };
 
-const initializeContracts = () => {
+const initializeContracts = async () => {
   try {
-    healthContract = new web3.eth.Contract(HealthABI.abi, healthContractAddress);
-    marketplaceContract = new web3.eth.Contract(HealthDataMarketplaceABI.abi, marketplaceContractAddress);
+    if (!web3) {
+      throw new Error("Web3 is not initialized");
+    }
+    console.log("Initializing Health contract with address:", healthContractAddress);
+    console.log("Health ABI:", HealthABI);
+    healthContract = new web3.eth.Contract(HealthABI, healthContractAddress);
+    console.log("Health Contract initialized:", healthContract);
+
+    console.log("Initializing Marketplace contract with address:", marketplaceContractAddress);
+    console.log("Marketplace ABI:", HealthDataMarketplaceABI);
+    marketplaceContract = new web3.eth.Contract(HealthDataMarketplaceABI, marketplaceContractAddress);
+    console.log("Marketplace Contract initialized:", marketplaceContract);
   } catch (error) {
     console.error("Contract initialization error:", error);
-    throw new Error("Failed to initialize contracts");
+    throw new Error("Failed to initialize contracts: " + error.message);
   }
 };
 
@@ -122,8 +135,6 @@ export const getMarketplaceContract = () => {
   return marketplaceContract;
 };
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const sendTransaction = async (method, params, retries = 3) => {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -131,11 +142,9 @@ export const sendTransaction = async (method, params, retries = 3) => {
       console.log('Estimating gas...');
       const gas = await method.estimateGas(params);
       console.log('Estimated gas:', gas);
-
       console.log('Getting gas price...');
       const gasPrice = await web3.eth.getGasPrice();
       console.log('Gas price:', gasPrice);
-
       console.log('Sending transaction...');
       const result = await method.send({
         ...params,
@@ -147,20 +156,47 @@ export const sendTransaction = async (method, params, retries = 3) => {
     } catch (error) {
       console.error(`Transaction error (Attempt ${attempt + 1}):`, error);
       if (error.message.includes('execution reverted')) {
-        console.error('Contract execution reverted. Check your contract logic.');
-        throw error; // Don't retry for contract logic errors
+        console.error('Contract execution reverted. Error:', error.message);
+        throw new Error('Contract execution reverted: ' + error.message);
       }
-      if (attempt < retries - 1) {
-        console.log(`Switching RPC URL and retrying in 2 seconds...`);
-        web3.setProvider(getNextRpcUrl());
-        await delay(2000); // Wait for 2 seconds before retrying
-      } else {
-        throw new Error(`Transaction failed after ${retries} attempts: ${error.message}`);
+      if (error.message.includes('Internal JSON-RPC error')) {
+        console.error('RPC error details:', error.data);
+        if (attempt < retries - 1) {
+          console.log('Switching RPC URL and retrying...');
+          switchRpcUrl();
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+      }
+      if (attempt === retries - 1) {
+        throw new Error('Transaction failed after ' + retries + ' attempts: ' + error.message);
       }
     }
   }
 };
+export const checkUserRole = async (address) => {
+  const healthContract = getHealthContract();
+  const isPatient = await healthContract.methods.hasRole(web3.utils.soliditySha3('PATIENT_ROLE'), address).call();
+  const isDoctor = await healthContract.methods.hasRole(web3.utils.soliditySha3('DOCTOR_ROLE'), address).call();
+  return { isPatient, isDoctor };
+};
+
+export const claimTokens = async (account) => {
+  const healthContract = getHealthContract();
+  await sendTransaction(healthContract.methods.claimFreeTokens(), { from: account });
+};
+export const callViewFunction = async (method, params) => {
+  try {
+    const result = await method.call(params);
+    return result;
+  } catch (error) {
+    console.error('Error calling view function:', error);
+    if (error.message.includes('Internal JSON-RPC error')) {
+      console.error('RPC error details:', error.data);
+    }
+    throw error;
+  }
+};
 
 export { web3 };
-
 export default web3;

@@ -7,11 +7,11 @@ module.exports = {
   networks: {
     hardhat: {},
     polygon_amoy: {
-      url: process.env.POLYGON_AMOY_RPC_URL,
+      url: process.env.POLYGON_AMOY_RPC_URL, // Ensure this is correctly referenced
       chainId: 80002,
-      accounts: [`0x${process.env.PRIVATE_KEY}`],
-      gasPrice: 50000000000, // 50 gwei
-      gas: 5000000, // Increased gas limit
-    }
-  }
+      accounts: [process.env.PRIVATE_KEY], // No need for `0x` prefix here
+      gasPrice: 30000000000, // 30 gwei
+      gas: 3000000, // Increased gas limit
+    },
+  },
 };

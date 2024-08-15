@@ -14,14 +14,15 @@ async function main() {
 
   // Deploy HealthDataMarketplace
   const HealthDataMarketplace = await hre.ethers.getContractFactory("HealthDataMarketplace");
-  const marketplace = await HealthDataMarketplace.deploy(health.address);
+  const marketplace = await HealthDataMarketplace.deploy(health.address, health.address);
   await marketplace.deployed();
 
   console.log("HealthDataMarketplace deployed to:", marketplace.address);
 
-  // Set the marketplace address in the Health contract
-  await health.setMarketplace(marketplace.address);
-  console.log("Marketplace address set in Health contract");
+  // Optional: Set the marketplace address in the Health contract if needed
+  // Uncomment the following lines if you have a setMarketplace function in your Health contract
+  // await health.setMarketplace(marketplace.address);
+  // console.log("Marketplace address set in Health contract");
 }
 
 main()

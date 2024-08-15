@@ -36,7 +36,7 @@ function DoctorDashboard() {
       setTokenBalance(web3.utils.fromWei(balance, 'ether'));
     } catch (error) {
       console.error("Error loading doctor data:", error);
-      setError("Failed to load doctor data. Please try again.");
+      setError("Failed to load doctor data. Please ensure you're connected to the correct network and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +73,8 @@ function DoctorDashboard() {
     try {
       const account = await getAccount();
       const healthContract = getHealthContract();
-      const date = new Date().toISOString();
+
+      const date = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
       await sendTransaction(
         healthContract.methods.addRecord(patientAddress, date, diagnosis, description, []),
         { from: account }

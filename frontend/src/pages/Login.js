@@ -1,17 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getHealthContract, getAccount, connectWallet, sendTransaction } from '../utils/web3Config';
+import { getHealthContract, getAccount, connectWallet, sendTransaction, checkUserRole } from '../utils/web3Config';
 
 function Login() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [aadhar, setAadhar] = useState('');
   const [age, setAge] = useState('');
+  const [hospital, setHospital] = useState('');
+  const [specialization, setSpecialization] = useState('');
   const [userType, setUserType] = useState('patient');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
+  const [showClaimTokens, setShowClaimTokens] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    checkUserStatus();
+  }, []);
+
+  const checkUserStatus = async () => {
+    setIsLoading(true);
+    try {
+      await connectWallet();
+      const account = await getAccount();
+      const { isPatient, isDoctor } = await checkUserRole(account);
+      
+      if (isPatient || isDoctor) {
+        setIsRegistered(true);
+        const healthContract = getHealthContract();
+        const hasClaimedTokens = await healthContract.methods.hasClaimedTokens(account).call();
+        if (hasClaimedTokens) {
+          navigate(isPatient ? '/patient' : '/doctor');
+        } else {
+          setShowClaimTokens(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking user status:', error);
+      setError('Failed to check user status. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,26 +50,27 @@ function Login() {
     setError('');
 
     try {
-      const connected = await connectWallet();
-      if (connected) {
-        const account = await getAccount();
-        const healthContract = getHealthContract();
+      await connectWallet();
+      const account = await getAccount();
+      const healthContract = getHealthContract();
 
-        let transaction;
-        if (userType === 'patient') {
-          transaction = healthContract.methods.addPatient(aadhar, name, email, parseInt(age));
-        } else if (userType === 'doctor') {
-          transaction = healthContract.methods.addDoctor(name, 'Hospital', 'Specialization', parseInt(age));
-        } else {
-          throw new Error('Invalid user type');
-        }
-
-        await sendTransaction(transaction, { from: account });
-        setIsRegistered(true);
+      let transaction;
+      if (userType === 'patient') {
+        transaction = healthContract.methods.addPatient(name, email, parseInt(age, 10));
+      } else if (userType === 'doctor') {
+        transaction = healthContract.methods.addDoctor(name, hospital, specialization, parseInt(age, 10));
+      } else {
+        throw new Error('Invalid user type');
       }
+
+      console.log('Registering user...');
+      await sendTransaction(transaction, { from: account });
+      console.log('User registered successfully');
+      setIsRegistered(true);
+      setShowClaimTokens(true);
     } catch (error) {
       console.error('Error during registration:', error);
-      setError(error.message || 'An error occurred during registration. Please try again.');
+      setError('Registration failed: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -49,18 +81,25 @@ function Login() {
     setError('');
 
     try {
+      await connectWallet();
       const account = await getAccount();
       const healthContract = getHealthContract();
 
-      await sendTransaction(
-        healthContract.methods.claimFreeTokens(),
-        { from: account }
-      );
+      console.log('Claiming tokens...');
+      await sendTransaction(healthContract.methods.claimFreeTokens(), { from: account });
+      console.log('Tokens claimed successfully');
 
-      navigate(userType === 'patient' ? '/patient' : '/doctor');
+      const { isPatient, isDoctor } = await checkUserRole(account);
+      if (isPatient) {
+        navigate('/patient');
+      } else if (isDoctor) {
+        navigate('/doctor');
+      } else {
+        throw new Error('User role not recognized');
+      }
     } catch (error) {
       console.error('Error claiming tokens:', error);
-      setError(error.message || 'An error occurred while claiming tokens. Please try again.');
+      setError('Failed to claim tokens: ' + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +112,9 @@ function Login() {
           <h2 className="text-3xl font-bold text-center text-indigo-900 mb-6">HealthLink Africa</h2>
           <h3 className="text-xl font-semibold mb-4 text-center text-gray-700">Login / Register</h3>
           {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-          {!isRegistered ? (
+          {isLoading ? (
+            <p className="text-center">Loading...</p>
+          ) : !isRegistered ? (
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-gray-700 mb-2" htmlFor="name">Name</label>
@@ -97,19 +138,6 @@ function Login() {
                   required
                 />
               </div>
-              {userType === 'patient' && (
-                <div className="mb-4">
-                  <label className="block text-gray-700 mb-2" htmlFor="aadhar">Aadhar Number</label>
-                  <input
-                    id="aadhar"
-                    type="text"
-                    value={aadhar}
-                    onChange={(e) => setAadhar(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
-                  />
-                </div>
-              )}
               <div className="mb-4">
                 <label className="block text-gray-700 mb-2" htmlFor="age">Age</label>
                 <input
@@ -121,6 +149,32 @@ function Login() {
                   required
                 />
               </div>
+              {userType === 'doctor' && (
+                <>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 mb-2" htmlFor="hospital">Hospital</label>
+                    <input
+                      id="hospital"
+                      type="text"
+                      value={hospital}
+                      onChange={(e) => setHospital(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 mb-2" htmlFor="specialization">Specialization</label>
+                    <input
+                      id="specialization"
+                      type="text"
+                      value={specialization}
+                      onChange={(e) => setSpecialization(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      required
+                    />
+                  </div>
+                </>
+              )}
               <div className="mb-6">
                 <label className="block text-gray-700 mb-2" htmlFor="userType">User Type</label>
                 <select
@@ -141,7 +195,7 @@ function Login() {
                 {isLoading ? 'Processing...' : 'Register'}
               </button>
             </form>
-          ) : (
+          ) : showClaimTokens ? (
             <div>
               <p className="text-gray-700 mb-4">Registration successful! Claim your free tokens to get started.</p>
               <button 
@@ -152,6 +206,8 @@ function Login() {
                 {isLoading ? 'Processing...' : 'Claim Free Tokens'}
               </button>
             </div>
+          ) : (
+            <p className="text-green-600 text-center">You have already claimed your tokens. Redirecting to dashboard...</p>
           )}
         </div>
       </div>
