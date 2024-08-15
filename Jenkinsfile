@@ -15,14 +15,16 @@ pipeline {
         
         stage('Build Frontend') {
             steps {
-                sh 'npm install'
-                sh 'npm run build'
+                dir('frontend') {  // Assuming frontend code is in a 'frontend' directory
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
             }
         }
         
         stage('Deploy Smart Contract') {
             steps {
-                dir('blockchain') {
+                dir('blockchain') {  // Assuming blockchain code is in a 'blockchain' directory
                     withCredentials([
                         string(credentialsId: 'polygon-amoy-rpc-url', variable: 'POLYGON_AMOY_RPC_URL'),
                         string(credentialsId: 'polygon-private-key', variable: 'PRIVATE_KEY')
@@ -39,12 +41,14 @@ pipeline {
         
         stage('Build and Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
-                    sh "docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest"
-                    sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    sh "docker push ${DOCKER_IMAGE}:latest"
+                dir('frontend') {  // Build Docker image from frontend directory
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                        sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                        sh "docker tag ${DOCKER_IMAGE}:${BUILD_NUMBER} ${DOCKER_IMAGE}:latest"
+                        sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                        sh "docker push ${DOCKER_IMAGE}:latest"
+                    }
                 }
             }
         }
