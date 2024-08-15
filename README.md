@@ -114,12 +114,12 @@ The application is deployed using a CI/CD pipeline with Jenkins and Kubernetes.
 
 1. Build the Docker image:
    ```
-   docker build -t yourdockerhubusername/healthlink-frontend:latest .
+   docker build -t omardibba/healthlink-frontend:latest .
    ```
 
 2. Push the image to Docker Hub:
    ```
-   docker push yourdockerhubusername/healthlink-frontend:latest
+   docker push omardibba/healthlink-frontend:latest
    ```
 
 3. Apply Kubernetes manifests:
